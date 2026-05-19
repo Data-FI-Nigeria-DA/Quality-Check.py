@@ -5,11 +5,17 @@ import re
 import numpy as np
 
 # Path to the directory containing the CSV files
-folder_path = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/FY26Q1_RADET/NEW'
+folder_path = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/FY26Q3_RADET/May 2026/8th May, 2026'
+
+# Path for the separate viral load output file
+viral_load_output_path = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/Cleaned_Viral_Load_Values_tbd.xlsx'
+
+# Path for the unique CD4 values output file
+unique_cd4_output_path = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/Cleaned_CD4_Values_tbd.xlsx'
+
 
 # Define output directory for projects
-output_base_dir = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/Project_Export_Quality_Check'
-
+output_base_dir = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/Project_Export_Quality_Check_all/May 2026/Project_Export_Quality_Check_8thMay'
 os.makedirs(output_base_dir, exist_ok=True)
 
 # Define filter date
@@ -17,7 +23,7 @@ filter_date = datetime(2025, 1, 1)
 #end_date =datetime(2024, 12, 31)
 
 # Combine all CSV files into one DataFrame, specifying 'latin1' encoding
-all_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith(('.csv', '.xlsx', '.xls'))]
+all_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith(('.csv', '.xlsx'))]
 
 # Combine all files into one DataFrame
 combined_data = pd.DataFrame()
@@ -28,8 +34,6 @@ for file in all_files:
             data = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
         elif file.endswith('.xlsx'):
             data = pd.read_excel(file, engine='openpyxl')
-        elif file.endswith('.xls'):
-            data = pd.read_excel(file)
         else:
             continue
         
@@ -53,7 +57,7 @@ for col in ['Date of Birth (yyyy-mm-dd)', 'Last Pickup Date (yyyy-mm-dd)', 'ART 
                'Date of TB Screening (yyyy-mm-dd)', 'Date of TB Sample Collection (yyyy-mm-dd)','Date of TPT Start (yyyy-mm-dd)', 
                'Date of Registration', 'Enrollment  Date (yyyy-mm-dd)', 'TPT Completion date (yyyy-mm-dd)', 
                'Date of TB Diagnostic Result Received (yyyy-mm-dd)', 'Date of Last CD4 Count',
-               'Date of Viral Load Eligibility Status', 'Date of Viral Load Sample Collection (yyyy-mm-dd)','Date of Additional TB Diagnosis Result using XRAY (for client with negative lab results with CAD score of 40 & above)',
+               'Date of Viral Load Eligibility Status', 'Date of Viral Load Sample Collection (yyyy-mm-dd)',#'Date of Additional TB Diagnosis Result using XRAY (for client with negative lab results with CAD score of 40 & above)',
                'Date of Start of TB Treatment (yyyy-mm-dd)', 'Date of Completion of TB Treatment (yyyy-mm-dd)',  'Date of commencement of EAC (yyyy-mm-dd)',
                'Date of last EAC Session Completed', 'Date of Extended EAC Completion (yyyy-mm-dd)', 'Date of Repeat Viral Load - Post EAC VL Sample collected (yyyy-mm-dd)',
                'Date of Repeat Viral load result- POST EAC VL', 'Date of devolvement', 'Date of current DSD', 'Date of Return of DSD Client to Facility (yyyy-mm-dd)',
@@ -229,7 +233,7 @@ def clean_viral_load(value):
     val_str = str(value).strip().lower()
 
     # Rule 1: Convert undetected-like values to 0
-    if any(keyword in val_str for keyword in ['undetected', 'tnd', 'not detected', 'notdetected', 'nd', 'target not detected', 'not dectected', 'Not detected', 'NotDetected']):
+    if any(keyword in val_str for keyword in ['undetected', 'tnd', 'not detected', 'notdetected', 'nd', 'target not detected', 'not dectected', 'Not detected', 'NotDetected', 'Titer min','Titermin','TARGET0']):
         return 0
 
     # Rule 2: Convert <20, <30, < 20detected etc. to 0
@@ -259,7 +263,7 @@ def clean_viral_load(value):
             return value
 
     # Rule 6: Preserve specific text values
-    if any(keyword in val_str for keyword in ['repeatsamplecollection', 'failedtwice', 'failedthreetimes', 'invalid', 'failed']):
+    if any(keyword in val_str for keyword in ['repeatsamplecollection', 'failedtwice', 'failedthreetimes', 'invalid', 'failed','INVALID','InvalidClot.Repeatcollection','repeat sample collection']):
         return value
 
     # Default: return original value
@@ -300,7 +304,7 @@ def is_invalid_viralload(value):
         r"<20",
         r"failed",
         r"\d{1,3}(,\d{3})+",
-        r"Failed,TwiceREPEATSAMPLECOLLECTION|InvalidFailedTwiceREPEATSAMPLECOLLECTION|InvalidFailedtwice,REPEATSAMPLECOLLECTION|Invalid,FailedTwiceREPEATSAMPLECOLLECTION|Failedthreetimes,REPEATSAMPLECOLLECTION|Invalid,TwiceREPEATSAMPLECOLLECTION|Failedtwice,REPEATSAMPLECOLLECTION|Invalid,REPEATSAMPLECOLLECTION|Failed,REPEATSAMPLECOLLECTION|InvalidTwiceREPEATSAMPLECOLLECTION|FailedthreetimesREPEATSAMPLECOLLECTION|FailedTwiceREPEATSAMPLECOLLECTION|InvalidFailedtwiceREPEATSAMPLECOLLECTION|REPEAT SAMPLE COLLECTION|Invalid format|Invalidformat"
+        r"Failed,TwiceREPEATSAMPLECOLLECTION|InvalidFailedtwice,REPEATSAMPLECOLLECTION|Invalid,FailedTwiceREPEATSAMPLECOLLECTION|Failedthreetimes,REPEATSAMPLECOLLECTION|Invalid,TwiceREPEATSAMPLECOLLECTION|Failedtwice,REPEATSAMPLECOLLECTION|Invalid,REPEATSAMPLECOLLECTION|Failed,REPEATSAMPLECOLLECTION|InvalidTwiceREPEATSAMPLECOLLECTION|FailedthreetimesREPEATSAMPLECOLLECTION|FailedTwiceREPEATSAMPLECOLLECTION|InvalidFailedtwiceREPEATSAMPLECOLLECTION|REPEAT SAMPLE COLLECTION|Invalid format|Invalidformat|Titer min|Titermin"
     ]
     
     # Check if the value matches any valid pattern
@@ -342,6 +346,9 @@ def is_invalid_viralload(value):
     # Default case: If it doesn't match any valid pattern and doesn't match specific invalid ones
     return True
 
+# Convert Last CD4 Count and Current Viral Load to integers
+# combined_data['Last CD4 Count'] = pd.to_numeric(combined_data['Last CD4 Count'], errors='coerce')
+# combined_data['Current Viral Load (c/ml)'] = pd.to_numeric(combined_data['Current Viral Load (c/ml)'], errors='coerce')
 
 # Iterate through projects
 # Iterate through each unique project name
@@ -501,9 +508,14 @@ for project_name in combined_data['ProjectName'].unique():
     ART_Status_Date_less_than_ARTStartDate['QualityIssue'] = 'Current ART Status Date less than ART Start Date'
     all_line_lists_data.append(ART_Status_Date_less_than_ARTStartDate)
 
-    
+    # Condition 18: Date of Last CD4 < ART Start Date
+    # lastCD4CountDate_less_than_ARTStartDate = project_data[
+    #     (project_data['Date of Last CD4 Count'] < project_data['ART Start Date (yyyy-mm-dd)']) & (project_data['Client Verification Outcome'].isin(['valid', '']))]
+    # project_issues['Date of Last CD4 less than ART Start Date'] = lastCD4CountDate_less_than_ARTStartDate.shape[0]
+    # lastCD4CountDate_less_than_ARTStartDate['QualityIssue'] = 'Date of Last CD4 less than ART Start Date'
+    # all_line_lists_data.append(lastCD4CountDate_less_than_ARTStartDate)
 
-    # Condition 18: Current ART Status Date < Last Pickup Date
+    # Condition 19: Current ART Status Date < Last Pickup Date
     ART_Status_Date_less_than_LastPickUpDate_CheckwithHI = project_data[
         (project_data['Date of Current ART Status'] < project_data['Last Pickup Date (yyyy-mm-dd)']) &
           (project_data['Client Verification Outcome'].isin(['valid', '']))]
@@ -511,7 +523,7 @@ for project_name in combined_data['ProjectName'].unique():
     ART_Status_Date_less_than_LastPickUpDate_CheckwithHI['QualityIssue'] = 'Current ART Status Date less than Last Pickup Date_CheckwithHI'
     all_line_lists_data.append(ART_Status_Date_less_than_LastPickUpDate_CheckwithHI)
 
-    # Condition 19: Date of Previous ART_Status > Date of Current ART Status
+    # Condition 20: Date of Previous ART_Status > Date of Current ART Status
     PreviousARTStatusDate_greater_than_CurrentARTStatusDate_CheckwithHI = project_data[
         (project_data['Confirmed Date of Previous ART Status'] > project_data['Date of Current ART Status']) &
         (project_data['Current ART Status'].isin(['Active', 'Active Restart']))
@@ -520,7 +532,8 @@ for project_name in combined_data['ProjectName'].unique():
     PreviousARTStatusDate_greater_than_CurrentARTStatusDate_CheckwithHI['QualityIssue'] = 'Date of Previous ART Status greater than Date of Current ART Status_CheckwithHI'
     all_line_lists_data.append(PreviousARTStatusDate_greater_than_CurrentARTStatusDate_CheckwithHI)
 
-    # Condition 20: Date of Current Viral load without Current Viral load    
+    # Condition 21: Date of Current Viral Load (yyyy-mm-dd) without Current Viral Load (c/ml)
+    
     non_numeric_texts = [
         'failed', 'repeatsamplecollection', 'failedtwice', 'failedthreetimes', 'invalid',
         'Failed,TwiceREPEATSAMPLECOLLECTION', 'InvalidFailedtwice,REPEATSAMPLECOLLECTION',
@@ -541,7 +554,7 @@ for project_name in combined_data['ProjectName'].unique():
     ]
 
 
-    # Condition 21: Date of Viral Load Sample Collection (yyyy-mm-dd) < ART start Date
+    # Condition 22: Date of Viral Load Sample Collection (yyyy-mm-dd) < ART start Date
     VLsamplecollectionDate_less_than_ARTStartDate = project_data[
         (project_data['Date of Viral Load Sample Collection (yyyy-mm-dd)'] < project_data['ART Start Date (yyyy-mm-dd)']) &
           (project_data['Client Verification Outcome'].isin(['valid', ''])) &
@@ -590,6 +603,8 @@ for project_name in combined_data['ProjectName'].unique():
     all_line_lists_data.append(TX_RTT_without_PreviousARTStatus_CheckwithHI)
 
     # Condition 27: Date of TB Screening < ART Start Date
+    #project_data['Last_CD4_Count'] = project_data['Last CD4 Count'].copy()
+    #project_data['Last_CD4_Count'] = pd.to_numeric(project_data['Last_CD4_Count'], errors='coerce')
     TBScreeningDate_less_than_ARTStartDate = project_data[
         (project_data['Date of TB Screening (yyyy-mm-dd)'] < project_data['ART Start Date (yyyy-mm-dd)']) &
         (~(project_data['Date of Last CD4 Count'] < project_data['ART Start Date (yyyy-mm-dd)'])) &
@@ -610,6 +625,7 @@ for project_name in combined_data['ProjectName'].unique():
         (~project_data['Cleaned Last CD4 Count'].apply(cd4_lt)) & 
         (project_data['Date of TB Screening (yyyy-mm-dd)'] >= filter_date) &
         (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+        (~(project_data['TB status'].isin(['Currently on TB treatment']))) &
         (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
     project_issues['TBScreeningDate_without_TBScreeningType'] = TBScreeningDate_without_TBScreeningType.shape[0]
     TBScreeningDate_without_TBScreeningType['QualityIssue'] = 'Date of TB Screening with blank TB Screening Type'
@@ -662,7 +678,25 @@ for project_name in combined_data['ProjectName'].unique():
     Wrongformat_TBDiagnosticTestType['QualityIssue'] = 'Wrong format of TB Diagnostic Test Type'
     all_line_lists_data.append(Wrongformat_TBDiagnosticTestType)
 
-    
+    # Condition 33: Date of TB Sample Collection < ART start Date
+    # TBSampleCollectionDate_less_than_ARTStartDate = project_data[
+    #     (project_data['Date of TB Sample Collection (yyyy-mm-dd)'] < project_data['ART Start Date (yyyy-mm-dd)']) &
+    #     (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+    #     (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
+    # project_issues['TBSampleCollectionDate_less_than_ARTStartDate'] = TBSampleCollectionDate_less_than_ARTStartDate.shape[0]
+    # TBSampleCollectionDate_less_than_ARTStartDate['QualityIssue'] = 'Date of TB Sample Collection less than ART start Date'
+    # all_line_lists_data.append(TBSampleCollectionDate_less_than_ARTStartDate)
+
+    # Condition 34: Date of TB Diagnostic Result Received < ART start Date
+    # TBDiagnosticResultDate_less_than_ARTStartDate = project_data[
+    #     (project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] < project_data['ART Start Date (yyyy-mm-dd)']) &
+    #     (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+    #     (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
+    # project_issues['TBDiagnosticResultDate_less_than_ARTStartDate'] = TBDiagnosticResultDate_less_than_ARTStartDate.shape[0]
+    # TBDiagnosticResultDate_less_than_ARTStartDate['QualityIssue'] = 'Date of TB Diagnostic Result Received less than ART start Date'
+    # all_line_lists_data.append(TBDiagnosticResultDate_less_than_ARTStartDate)
+
+
     # Condition 35: Wrong format of TB Diagnostic Result
     WrongFormatOfTBDiagnosticResult_CheckwithHI = project_data[
         (project_data['Date of TB Screening (yyyy-mm-dd)'] >= filter_date) &
@@ -677,6 +711,20 @@ for project_name in combined_data['ProjectName'].unique():
     WrongFormatOfTBDiagnosticResult_CheckwithHI['QualityIssue'] = 'Wrong Format Of TB Diagnostic Result_CheckwithHI'
     all_line_lists_data.append(WrongFormatOfTBDiagnosticResult_CheckwithHI)
 
+
+
+    # Condition 36: Positive TB Diagnostic Result with blank Date of start of TB Treatment
+    # PositiveTBDiagnosticResult_without_DateStartofTBTreatment = project_data[
+    #     (project_data['TB Diagnostic Result'].isin(['MTB detected RIF resistance not detected','MTB detected RR','MTB detected RR not detected','MTB detected RR detected','MTB detected RR inderterminate','MTB Detected (Rifampicin Resistance Detected)','X-ray suggestive','AFB Positive','Suggestive for TB','MTBD', 'Positive', 'MTB detected RIF resistance detected', 'MTB detected RR','MTB Detected (Rifampicin not Resistance)',
+    #                                                 'MTB DETECTED', 'MTB DETECTED RIF Resistance Indeterminate', 'MTB TRACE DETECTED RIF INDETERMINATE', 'MTB trace RIF resistance indeterminate'])) &
+    #     (project_data['Date of Start of TB Treatment (yyyy-mm-dd)'].isna()) &
+    #     (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+    #     (project_data['Date of TB Screening (yyyy-mm-dd)'] >= filter_date) &
+    #     (project_data['Date of TB Sample Collection (yyyy-mm-dd)'] >= filter_date) &
+    #     (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
+    # project_issues['PositiveTBDiagnosticResult_without_DateStartofTBTreatment'] = PositiveTBDiagnosticResult_without_DateStartofTBTreatment.shape[0]
+    # PositiveTBDiagnosticResult_without_DateStartofTBTreatment['QualityIssue'] = 'Positive TB Diagnostic Result with blank Date of start of TB Treatment'
+    # all_line_lists_data.append(PositiveTBDiagnosticResult_without_DateStartofTBTreatment)
 
     # Condition 37:Date of start of TB Treatment where TB Diagnostic Result = 'Negative' or contains 'MTB not Detected
     DateStartofTBTreatment_where_TBDiagResult_is_neg = project_data[
@@ -707,6 +755,19 @@ for project_name in combined_data['ProjectName'].unique():
     all_line_lists_data.append(DateStartofTBTreatment_without_TBType)
 
 
+    # Condition 39: Date of Completion of TB Treatment < Date of Start of TB Treatment
+    # DateCompletionofTBTreatment_less_than_DateStartofTBTreatment = project_data[
+    #     (project_data['Date of Completion of TB Treatment (yyyy-mm-dd)'] < project_data['Date of Start of TB Treatment (yyyy-mm-dd)']) &
+    #     (~project_data['Date of Start of TB Treatment (yyyy-mm-dd)'].isna()) &
+    #     (project_data['Date of Start of TB Treatment (yyyy-mm-dd)'] >= filter_date) &
+    #     (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+    #     (project_data['Date of TB Screening (yyyy-mm-dd)'] >= filter_date) &
+    #     (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
+    # project_issues['DateCompletionofTBTreatment_less_than_DateStartofTBTreatment'] = DateCompletionofTBTreatment_less_than_DateStartofTBTreatment.shape[0]
+    # DateCompletionofTBTreatment_less_than_DateStartofTBTreatment['QualityIssue'] = 'Date of Completion of TB Treatment less than Date of Start of TB Treatment'
+    # all_line_lists_data.append(DateCompletionofTBTreatment_less_than_DateStartofTBTreatment)
+
+
     # Condition 40:Date of Completion of TB Treatment with blank TB Treatment Outcome
     DateCompletionofTBTreatment_without_TBTreatmentOutcome = project_data[
         (~project_data['Date of Completion of TB Treatment (yyyy-mm-dd)'].isna()) &
@@ -718,7 +779,21 @@ for project_name in combined_data['ProjectName'].unique():
     DateCompletionofTBTreatment_without_TBTreatmentOutcome['QualityIssue'] = 'Date of Completion of TB Treatment with blank TB Treatment Outcome'
     all_line_lists_data.append(DateCompletionofTBTreatment_without_TBTreatmentOutcome)
 
-    
+    # Condition 41:Date of TPT Start where TB Status is positive.
+    # DateTPTStart_where_TBStatus_is_positive_CheckwithHI = project_data[
+    #     (((project_data['TB status'].isin(['Presumptive TB'])) & (project_data['TB Diagnostic Result'].isin(['MTB detected RIF resistance not detected', 'Positive', 'MTB detected RIF resistance detected', 'MTB Detected (Rifampicin not Resistance)', 'MTB DETECTED', 'MTB DETECTED RIF Resistance Indeterminate', 'MTB TRACE DETECTED RIF INDETERMINATE', 'MTB trace RIF resistance indeterminate']))) |
+    #      (project_data['TB status'].isin(['Currently on TB treatment', 'Confirmed TB']))) &
+    #     (~project_data['Date of TPT Start (yyyy-mm-dd)'].isna()) &
+    #     (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+    #     (project_data['Date of TB Screening (yyyy-mm-dd)'] >= filter_date) &
+    #     (project_data['Date of TPT Start (yyyy-mm-dd)'] >= filter_date) &
+    #     (project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] >= filter_date) &
+    #     (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
+    # project_issues['DateTPTStart_where_TBStatus_is_positive_CheckwithHI'] = DateTPTStart_where_TBStatus_is_positive_CheckwithHI.shape[0]
+    # DateTPTStart_where_TBStatus_is_positive_CheckwithHI['QualityIssue'] = 'Date of TPT Start where TB Status is positive'
+    # all_line_lists_data.append(DateTPTStart_where_TBStatus_is_positive_CheckwithHI)
+
+
     # Condition 42:Date of TPT Start with blank TPT Type
     DateTPTStart_without_TPTtype = project_data[
         (project_data['Date of TPT Start (yyyy-mm-dd)'] >= filter_date) &
@@ -755,8 +830,212 @@ for project_name in combined_data['ProjectName'].unique():
     project_issues['DateTPTCompletion_without_CompletionStatus'] = DateTPTCompletion_without_CompletionStatus.shape[0]
     DateTPTCompletion_without_CompletionStatus['QualityIssue'] = 'DateTPTCompletion_without_CompletionStatus'
     all_line_lists_data.append(DateTPTCompletion_without_CompletionStatus)
+    
+    
+    # 'TB Diagnostic Result' to lowercase for case-insensitive matching
+    project_data['TB Diagnostic Result'] = project_data['TB Diagnostic Result'].str.lower().fillna('')
+
+    pos_neg_pattern = r'pos|neg|\+|\-|\_|\+ve|\-ve|nag|p0s|nrg|pso|ng|ned'
+    chest_x_ray_pos_neg_pattern = r'not sugestive|suggestive|mbt detectected|mt detected|mt not detected|mtb n0t detected|dectected|mtb not detectd|not detected|detected|dtected|detectted|detectd|dedected|detect|mtbd|deteted|dectected|\-mtb|suggestive for tb|mtb not detected'
+    mtb_pos_neg_pattern = r'mbt detectected|mt detected|mt not detected|mtb n0t detected|dectected|mtb not detectd|not detected|detected|dtected|detectted|detectd|dedected|detect|mtbd|deteted|mtb trace|dectected|\-mtb|error|incomplete|invalid|mtb not detected|mtb detected (rifampicin resistance detected)|mtb trace rif resistance indeterminate|not detected'
+
+    tb_exclusion_pattern = r'(?:tb\s+(?:positive|negative|pos|neg|ned))'
+    afb_exclusion_pattern = r'(?:afb\s+(?:positive|negative|pos|neg|ned))'
+
+    pos_pattern = r'pos|\+|\+ve|p0s|pso'
+    chest_x_ray_pos_pattern = r'^(suggestive|x-ray suggestive|mtb detected|mbt detectected|mt detected|detected|mtbdetect|mtb detectected|mtb detectted|detectted|mtb detectd|detectd|mtb dectected|dectected|mtb dedected|dedected|mtb dtected|dtected|mtd detected|mtb detectted|detectted|mtbd|mtb trace|detect|ptb detect|dedected|ptb suspect|deteted|\+mtb)'
+    mtb_pos_pattern = r'^(mtb detected|mbt detectected|mt detected|detected|mtbdetect|mtb detectected|mtb detectted|detectted|mtb detectd|detectd|mtb dectected|dectected|mtb dedected|dedected|mtb trace|mtb dtected|dtected|mtd detected|mtb detectted|detectted|mtbd|mtb trace|detect|ptb detect|dedected|ptb suspect|deteted|\+mtb)'
+
+    tb_pos_exclusion_pattern = r'(?:TB\s+(?:positive|pos|p0s))'
+    afb_pos_exclusion_pattern = r'(?:AFB\s+(?:positive|pos|p0s))'
+
 
     
+    End_of_quarter = pd.to_datetime('2026-03-31')
+    six_months_ago = pd.to_datetime('2025-10-01')
+
+
+    tx_tb_d_TB_Test_Type_Xpert_with_result_mappingissues = project_data[
+   ((project_data['Date of TB Screening (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Screening (yyyy-mm-dd)'] <= End_of_quarter)) & 
+   ((project_data['Client Verification Outcome'].isin(['valid', 'valid ', ' valid', 'Valid'])) |
+     (project_data['Client Verification Outcome'].isna()) | # Catches np.nan
+        (project_data['Client Verification Outcome'] == '') | # Catches explicit empty strings
+        (project_data['Client Verification Outcome'].str.strip() == '') ) &
+   (project_data['Current ART Status'].str.contains('Active')) &
+   ((project_data['TB Screening Type'].isin(['CXR', 'Smear', 'Gene Xpert', 'Chest X-ray without CAD', 'Chest X-ray','Chest X-ray with CAD', 'Chest X-Ray with CAD and/or Symptom screening', 'Symptom screen (alone)']))) &
+    (project_data['TB status'].str.contains('Presumptive TB|TB Suspected and referred for evaluation|Confirmed TB|Currently on TB treatment')) &
+   ((project_data['Date of TB Sample Collection (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Sample Collection (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (~project_data['TB Diagnostic Test Type'].isna()) &
+   ((project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (
+         
+    ((project_data['TB Diagnostic Test Type'].str.contains('Gene Xpert', na=False)) &
+    ~(project_data['TB Diagnostic Result'].str.contains(mtb_pos_neg_pattern, na=False)))
+    )
+    ]
+    project_issues['tx_tb_d_TB_Test_Type_Xpert_with_result_mappingissues'] = tx_tb_d_TB_Test_Type_Xpert_with_result_mappingissues.shape[0]
+    tx_tb_d_TB_Test_Type_Xpert_with_result_mappingissues['QualityIssue'] = 'tx_tb_d_TB_Test_Type_Xpert_with_result_mappingissues'
+    all_line_lists_data.append(tx_tb_d_TB_Test_Type_Xpert_with_result_mappingissues)
+
+
+
+
+
+    tx_tb_d_TB_Test_Type_TruNAT_with_result_mappingissues = project_data[
+   ((project_data['Date of TB Screening (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Screening (yyyy-mm-dd)'] <= End_of_quarter)) & 
+   ((project_data['Client Verification Outcome'].isin(['valid', 'valid ', ' valid', 'Valid'])) |
+     (project_data['Client Verification Outcome'].isna()) | # Catches np.nan
+        (project_data['Client Verification Outcome'] == '') | # Catches explicit empty strings
+        (project_data['Client Verification Outcome'].str.strip() == '') ) &
+   (project_data['Current ART Status'].str.contains('Active')) &
+   ((project_data['TB Screening Type'].isin(['CXR', 'Smear', 'Gene Xpert', 'Chest X-ray without CAD', 'Chest X-ray','Chest X-ray with CAD', 'Chest X-Ray with CAD and/or Symptom screening', 'Symptom screen (alone)']))) &
+    (project_data['TB status'].str.contains('Presumptive TB|TB Suspected and referred for evaluation|Confirmed TB|Currently on TB treatment')) &
+   ((project_data['Date of TB Sample Collection (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Sample Collection (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (~project_data['TB Diagnostic Test Type'].isna()) &
+   ((project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (
+         
+    ((project_data['TB Diagnostic Test Type'].str.contains('TrueNAT', na=False)) &
+    ~(project_data['TB Diagnostic Result'].str.contains(mtb_pos_neg_pattern, na=False)))
+    )
+    ]
+    project_issues['tx_tb_d_TB_Test_TruNAT_with_result_mappingissues'] = tx_tb_d_TB_Test_Type_TruNAT_with_result_mappingissues.shape[0]
+    tx_tb_d_TB_Test_Type_TruNAT_with_result_mappingissues['QualityIssue'] = 'tx_tb_d_TB_Test_Type_TruNAT_with_result_mappingissues'
+    all_line_lists_data.append(tx_tb_d_TB_Test_Type_TruNAT_with_result_mappingissues)
+
+
+
+
+    tx_tb_d_TB_Test_Type_Xray_with_result_mappingissues = project_data[
+   ((project_data['Date of TB Screening (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Screening (yyyy-mm-dd)'] <= End_of_quarter)) & 
+   ((project_data['Client Verification Outcome'].isin(['valid', 'valid ', ' valid', 'Valid'])) |
+     (project_data['Client Verification Outcome'].isna()) | # Catches np.nan
+        (project_data['Client Verification Outcome'] == '') | # Catches explicit empty strings
+        (project_data['Client Verification Outcome'].str.strip() == '') ) &
+   (project_data['Current ART Status'].str.contains('Active')) &
+   ((project_data['TB Screening Type'].isin(['CXR', 'Smear', 'Gene Xpert', 'Chest X-ray without CAD', 'Chest X-ray','Chest X-ray with CAD', 'Chest X-Ray with CAD and/or Symptom screening', 'Symptom screen (alone)']))) &
+    (project_data['TB status'].str.contains('Presumptive TB|TB Suspected and referred for evaluation|Confirmed TB|Currently on TB treatment')) &
+   ((project_data['Date of TB Sample Collection (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Sample Collection (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (~project_data['TB Diagnostic Test Type'].isna()) &
+   ((project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (
+         
+    ((project_data['TB Diagnostic Test Type'].str.contains('Chest X-ray', na=False)) &
+    ~(project_data['TB Diagnostic Result'].str.contains(chest_x_ray_pos_neg_pattern, na=False)))  
+    )
+    ]
+    project_issues['tx_tb_d_TB_Test_Type_Xray_with_result_mappingissues'] = tx_tb_d_TB_Test_Type_Xray_with_result_mappingissues.shape[0]
+    tx_tb_d_TB_Test_Type_Xray_with_result_mappingissues['QualityIssue'] = 'tx_tb_d_TB_Test_Type_Xray_with_result_mappingissues'
+    all_line_lists_data.append(tx_tb_d_TB_Test_Type_Xray_with_result_mappingissues)
+
+
+
+    tx_tb_d_TB_Test_Type_AFB_with_result_mappingissues = project_data[
+   ((project_data['Date of TB Screening (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Screening (yyyy-mm-dd)'] <= End_of_quarter)) & 
+   ((project_data['Client Verification Outcome'].isin(['valid', 'valid ', ' valid', 'Valid'])) |
+     (project_data['Client Verification Outcome'].isna()) | # Catches np.nan
+        (project_data['Client Verification Outcome'] == '') | # Catches explicit empty strings
+        (project_data['Client Verification Outcome'].str.strip() == '') ) &
+   (project_data['Current ART Status'].str.contains('Active')) &
+   ((project_data['TB Screening Type'].isin(['CXR', 'Smear', 'Gene Xpert', 'Chest X-ray without CAD', 'Chest X-ray','Chest X-ray with CAD', 'Chest X-Ray with CAD and/or Symptom screening', 'Symptom screen (alone)']))) &
+    (project_data['TB status'].str.contains('Presumptive TB|TB Suspected and referred for evaluation|Confirmed TB|Currently on TB treatment')) &
+   ((project_data['Date of TB Sample Collection (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Sample Collection (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (~project_data['TB Diagnostic Test Type'].isna()) &
+   ((project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (
+         
+    ((project_data['TB Diagnostic Test Type'].str.contains('AFB Smear Microscopy', na=False)) &
+    ~(project_data['TB Diagnostic Result'].str.contains(pos_neg_pattern, na=False)) #&
+    #(project_data['TB Diagnostic Result'].str.contains(tb_exclusion_pattern, na=False))
+    ) 
+    )
+    ]
+    project_issues['tx_tb_d_TB_Test_Type_AFB_with_result_mappingissues'] = tx_tb_d_TB_Test_Type_AFB_with_result_mappingissues.shape[0]
+    tx_tb_d_TB_Test_Type_AFB_with_result_mappingissues['QualityIssue'] = 'tx_tb_d_TB_Test_Type_AFB_with_result_mappingissues'
+    all_line_lists_data.append(tx_tb_d_TB_Test_Type_AFB_with_result_mappingissues)
+
+
+
+
+
+
+
+    tx_tb_d_TB_Test_Type_Clinical_with_result_mappingissues = project_data[
+   ((project_data['Date of TB Screening (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Screening (yyyy-mm-dd)'] <= End_of_quarter)) & 
+   ((project_data['Client Verification Outcome'].isin(['valid', 'valid ', ' valid', 'Valid'])) |
+     (project_data['Client Verification Outcome'].isna()) | # Catches np.nan
+        (project_data['Client Verification Outcome'] == '') | # Catches explicit empty strings
+        (project_data['Client Verification Outcome'].str.strip() == '') ) &
+   (project_data['Current ART Status'].str.contains('Active')) &
+   ((project_data['TB Screening Type'].isin(['CXR', 'Smear', 'Gene Xpert', 'Chest X-ray without CAD', 'Chest X-ray','Chest X-ray with CAD', 'Chest X-Ray with CAD and/or Symptom screening', 'Symptom screen (alone)']))) &
+    (project_data['TB status'].str.contains('Presumptive TB|TB Suspected and referred for evaluation|Confirmed TB|Currently on TB treatment')) &
+   ((project_data['Date of TB Sample Collection (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Sample Collection (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (~project_data['TB Diagnostic Test Type'].isna()) &
+   ((project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (
+         
+    ((project_data['TB Diagnostic Test Type'].str.contains('Clinical evaluation only', na=False)) &
+    ~(project_data['TB Diagnostic Result'].str.contains(pos_neg_pattern, na=False)) &
+    (project_data['TB Diagnostic Result'].str.contains(tb_exclusion_pattern, na=False)) &
+    (project_data['TB Diagnostic Result'].str.contains(afb_exclusion_pattern, na=False))) 
+    )
+    ]
+    project_issues['tx_tb_d_TB_Test_Type_Clinical_with_result_mappingissues'] = tx_tb_d_TB_Test_Type_Clinical_with_result_mappingissues.shape[0]
+    tx_tb_d_TB_Test_Type_Clinical_with_result_mappingissues['QualityIssue'] = 'tx_tb_d_TB_Test_Type_Clinical_with_result_mappingissues'
+    all_line_lists_data.append(tx_tb_d_TB_Test_Type_Clinical_with_result_mappingissues)
+
+
+
+
+
+
+
+
+
+    tx_tb_d_TB_Test_Type_LAM_with_result_mappingissues = project_data[
+   ((project_data['Date of TB Screening (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Screening (yyyy-mm-dd)'] <= End_of_quarter)) & 
+   ((project_data['Client Verification Outcome'].isin(['valid', 'valid ', ' valid', 'Valid'])) |
+     (project_data['Client Verification Outcome'].isna()) | # Catches np.nan
+        (project_data['Client Verification Outcome'] == '') | # Catches explicit empty strings
+        (project_data['Client Verification Outcome'].str.strip() == '') ) &
+   (project_data['Current ART Status'].str.contains('Active')) &
+   ((project_data['TB Screening Type'].isin(['CXR', 'Smear', 'Gene Xpert', 'Chest X-ray without CAD', 'Chest X-ray','Chest X-ray with CAD', 'Chest X-Ray with CAD and/or Symptom screening', 'Symptom screen (alone)']))) &
+    (project_data['TB status'].str.contains('Presumptive TB|TB Suspected and referred for evaluation|Confirmed TB|Currently on TB treatment')) &
+   ((project_data['Date of TB Sample Collection (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Sample Collection (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (~project_data['TB Diagnostic Test Type'].isna()) &
+   ((project_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] >= six_months_ago) & (combined_data['Date of TB Diagnostic Result Received (yyyy-mm-dd)'] <= End_of_quarter)) &
+   (
+         
+    ((project_data['TB Diagnostic Test Type'].str.contains('TB-LAM', na=False)) &
+    ~(project_data['TB Diagnostic Result'].str.contains(pos_neg_pattern, na=False)))  |
+
+    ((project_data['TB Diagnostic Test Type'].str.contains('LF-LAM|TB LAMP', na=False)) &
+    ~(project_data['TB Diagnostic Result'].str.contains(pos_neg_pattern, na=False))) 
+    )
+    ]
+    project_issues['tx_tb_d_TB_Test_Type_LAM_with_result_mappingissues'] = tx_tb_d_TB_Test_Type_LAM_with_result_mappingissues.shape[0]
+    tx_tb_d_TB_Test_Type_LAM_with_result_mappingissues['QualityIssue'] = 'tx_tb_d_TB_Test_Type_LAM_with_result_mappingissues'
+    all_line_lists_data.append(tx_tb_d_TB_Test_Type_LAM_with_result_mappingissues)
+
+
+
+
+
+
+
+
+
+
+    # Condition 45: Date of Cervical Cancer Screening less than ART start Date
+    # DateCXCA_Screening_less_than_ARTStartDate = project_data[
+    #     (project_data['Date of Cervical Cancer Screening (yyyy-mm-dd)'] < project_data['ART Start Date (yyyy-mm-dd)']) &
+    #     (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+    #     (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
+    # project_issues['DateCXCA_Screening_less_than_ARTStartDate'] = DateCXCA_Screening_less_than_ARTStartDate.shape[0]
+    # DateCXCA_Screening_less_than_ARTStartDate['QualityIssue'] = 'DateCXCAScreening_less_than_ARTStartDate'
+    # all_line_lists_data.append(DateCXCA_Screening_less_than_ARTStartDate)
+
+
     # Condition 46:Date of Cervical Cancer Screening with blank Cervical Cancer Screening Type
     CXCAScreening_with_blank_Screentype = project_data[
         (project_data['Date of Cervical Cancer Screening (yyyy-mm-dd)'] >= filter_date) &
@@ -780,16 +1059,27 @@ for project_name in combined_data['ProjectName'].unique():
     all_line_lists_data.append(CXCAScreening_with_blank_Screenmethod)
 
 
+    # Condition 48:Result of Cervical Cancer Screening = 'positive' with blank Date of Precancerous Lesions Treatment
+    PositiveCXCAScreeningResult_with_blank_CXCATreatmentdate = project_data[
+        (project_data['Date of Cervical Cancer Screening (yyyy-mm-dd)'] >= filter_date) &
+        (project_data['Result of Cervical Cancer Screening'].isin(['Positive'])) &
+        (project_data['Date of Precancerous Lesions Treatment (yyyy-mm-dd)'].isna()) &
+        (project_data['Client Verification Outcome'].isin(['valid', ''])) &
+        (project_data['Current ART Status'].isin(['Active', 'Active Restart']))]
+    project_issues['PositiveCXCAScreeningResult_with_blank_CXCATreatmentdate'] = PositiveCXCAScreeningResult_with_blank_CXCATreatmentdate.shape[0]
+    PositiveCXCAScreeningResult_with_blank_CXCATreatmentdate['QualityIssue'] = 'PositiveCXCAScreeningResult_with_blank_CXCATreatmentdate'
+    all_line_lists_data.append(PositiveCXCAScreeningResult_with_blank_CXCATreatmentdate)
 
+    
 
-    # Create DataFrame for transposed quality issues summary for the current project
+    # Create DataFrame for transposed quality issues summary for the current IP
     quality_issues_df_transposed = pd.DataFrame.from_dict(project_issues, orient='index', columns=['Number of Records']).reset_index()
     quality_issues_df_transposed.columns = ['Quality Issue', 'Number of Records']
 
-    # Combine all line list data for the current project into one DataFrame
+    # Combine all line list data for the current IP into one DataFrame
     all_line_lists_df = pd.concat(all_line_lists_data, ignore_index=True)
 
-    # Define the output file path for the current project
+    # Define the output file path for the current IP
     output_file_path = os.path.join(project_dir, f"{project_name}_Quality_Check.xlsx")
 
     # Save the transposed quality issues and the combined line list to one Excel file with two sheets
@@ -800,3 +1090,33 @@ for project_name in combined_data['ProjectName'].unique():
     print(f"Quality check for project '{project_name}' saved to: {output_file_path}") 
 
 
+# Save original and cleaned viral load data to a new file
+viral_load_columns = ['Current Viral Load (c/ml)', 'Cleaned Current Viral Load (c/ml)']
+if all(col in combined_data.columns for col in viral_load_columns):
+    filtered_data = combined_data[combined_data['Date of Current Viral Load (yyyy-mm-dd)'] > filter_date].copy()
+    viral_load_df = filtered_data[viral_load_columns].copy()
+    distinct_viral_load_df = viral_load_df.drop_duplicates()
+
+    try:
+        distinct_viral_load_df.to_excel(viral_load_output_path, index=False)
+        print(f"\nSuccessfully saved distinct viral load data to: {viral_load_output_path}")
+    except Exception as e:
+        print(f"\nError saving viral load data: {e}")
+else:
+    print("\nWarning: 'Current Viral Load (c/ml)' or 'Cleaned Current Viral Load (c/ml)' column not found. Skipping viral load data export.")
+
+
+# Save original and cleaned Last cd4 count data to a new file
+last_cd4_count_columns = ['Last CD4 Count', 'Cleaned Last CD4 Count']
+if all(col in combined_data.columns for col in last_cd4_count_columns):
+    filtered_data = combined_data[combined_data['Date of Last CD4 Count'] > filter_date].copy()
+    cd4_count_df = filtered_data[last_cd4_count_columns].copy()
+    distinct_cd4_count_df = cd4_count_df.drop_duplicates()
+
+    try:
+        distinct_cd4_count_df.to_excel(unique_cd4_output_path, index=False)
+        print(f"\nSuccessfully saved distinct cd4 count data to: {unique_cd4_output_path}")
+    except Exception as e:
+        print(f"\nError saving cd4 count data: {e}")
+else:
+    print("\nWarning: 'Last CD4 Count' or 'Cleaned Last CD4 Count' column not found. Skipping cd4 count data export.")
